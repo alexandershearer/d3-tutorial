@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+</head>
+
+<body>
+    <svg id="svg" width="1000" height="800"></svg>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        async function handleData() {
+            const data = await d3.csv('../data/cities.csv')
+            // console.log(data)
+            const width = 600
+            const height = 600
+            const margin = 40
+            const colorScale = d3.scaleSequential()
+                .domain([0, data.length])
+                .interpolator(d3.interpolateRainbow);
+            // pieGen
+            const pieGen = d3.pie()
+            const arcData = pieGen(data.map(d => d.population))
+            const arcGen = d3.arc()
+                .innerRadius(40)
+                .outerRadius(200)
+                .padAngle(0.01)
+            // draw
+            const svg = d3
+                .select('#svg')
+            const pieGroup = svg
+                .append('g')
+                .attr('transform', `translate(${width * 2 / 3}, ${height / 2})`)
+            // pie
+            const piePath = pieGroup
+                .selectAll('path')
+                .data(arcData)
+                .enter()
+                .append('path')
+                .attr('d', arcGen)
+                .attr('fill', (d, i) => colorScale(i))
+            // legend
+            const labels = svg
+                .append('g')
+            labels
+                .selectAll('circle')
+                .data(data)
+                .enter()
+                .append('circle')
+                .attr('r', '5')
+                .attr('cx', 10)
+                .attr('cy', (d, i) => (i * 20) + 15)
+                .attr('fill', (d, i) => colorScale(i))
+            labels
+                .selectAll('text')
+                .data(data)
+                .enter()
+                .append('text')
+                .text(d => `${d.label} ${d.country}`)
+                .attr('x', 20)
+                .attr('y', (d, i) => (i * 20) + 20)
+            // pieLabel
+            const rLabels = svg
+                .append('g')
+                .attr('transform', `translate(${width * 2 / 3}, ${height / 2})`)
+            const arcLabels = d3.arc()
+                .outerRadius(160)
+                .innerRadius(160)
+            rLabels
+                .selectAll('text')
+                .data(data)
+                .enter()
+                .append('text')
+                .text(d => d.label)
+                .attr("transform", (d, i) => `translate(${arcLabels.centroid(arcData[i])})`)
+                .attr('text-anchor', 'middle')
+
+            // pieGen2
+            const countAllProperty = (data, property, prop2) => {
+                return data.reduce((acc, obj) => {
+                    acc[obj[property]] === undefined ? acc[obj[property]] = obj[prop2] : acc[obj[property]] += obj[prop2]
+                    return acc
+                }, [])
+            }
+            const pieGen2 = d3.pie()
+            const newData = countAllProperty(data, 'country', 'population')
+            let newParsedData = []
+            for (const [key, value] of Object.entries(newData)) {
+                // console.log(`${key}: ${value}`);
+                newParsedData.push({ 'label': key, 'population': value })
+            }
+            const arcData2 = pieGen2(newParsedData.map(d => d.population))
+            console.log(data)
+            console.log(newParsedData)
+            const arcGen2 = d3.arc()
+                .innerRadius(205)
+                .outerRadius(240)
+                .padAngle(0.01)
+            // countryPie
+            const pieGroup2 = svg
+                .append('g')
+                .attr('transform', `translate(${width * 2 / 3}, ${height / 2})`)
+            console.log(arcData)
+            console.log(arcData2)
+            const piepath2 = pieGroup2
+                .selectAll('path')
+                .data(arcData2)
+                .enter()
+                .append('path')
+                .attr('d', arcGen2)
+                .attr('fill', (d, i) => colorScale(i))
+            // pieLabel
+            const rLabels2 = svg
+                .append('g')
+                .attr('transform', `translate(${width * 2 / 3}, ${height / 2})`)
+            const arcLabels2 = d3.arc()
+                .outerRadius(240)
+                .innerRadius(205)
+            rLabels2
+                .selectAll('text')
+                .data(newParsedData)
+                .enter()
+                .append('text')
+                .text(d => d.label)
+                .attr("transform", (d, i) => `translate(${arcLabels2.centroid(arcData2[i])})`)
+                .attr('text-anchor', 'middle')
+
+        }
+        handleData()
+    </script>
+</body>
+
+</html>

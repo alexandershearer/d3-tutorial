@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        /* Put the box in the center of the page */
+        body,
+        html {
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #svg {
+            border: 1px solid;
+        }
+    </style>
+</head>
+
+<body>
+    <svg id="svg" width="600" height="400"></svg>
+    <select>
+        <option>1901</option>
+        <option>1902</option>
+        <option>1903</option>
+    </select>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        async function handleData() {
+            // helper
+            const convertToArray = obj => {
+                const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+                return months.map(month => {
+                    const temp = parseFloat(obj[month])
+                    return { month: month, temp }
+                })
+            }
+            // const
+            const data = await d3.csv('../data/Weather Data in India from 1901 to 2017.csv')
+            // console.log(data)
+            const width = 600
+            const height = 300
+            const margin = 40
+
+            let year = data[0]
+            let months = convertToArray(year)
+            // console.log(months_1901)
+            // draw
+            const svg = d3
+                .select('#svg')
+            const graph = svg
+                .append('g')
+            const drawData = (da, col, axis = false) => {
+                // scales
+                const xscale = d3.scaleLinear()
+                    .domain([0, da.length - 1])
+                    .range([margin, width - margin])
+                const yscale = d3.scaleLinear()
+                    .domain(d3.extent(da, d => d.temp))
+                    .range([height - margin, margin])
+                // helper
+                const linegen = d3.area()
+                    .x((d, i) => xscale(i))
+                    .y0(d => yscale(d.temp))
+                    .y1(height - margin)
+                    .curve(d3.curveStep)
+                // graph
+                const path = graph
+                    .append('path')
+                    .attr('d', linegen(da))
+                    .attr('stroke-width', 1)
+                    .attr('stroke', 'none')
+                    .attr('fill', `${col}`)
+                    .style('opacity', '.3')
+                if (axis) {
+                    // axis
+                    const monthsScale = d3.scaleTime()
+                        .domain([new Date('1901-01-01'), new Date('1901-12-01')])
+                        .range([margin, width - margin])
+                        .nice()
+                    const bottomAxis = d3.axisBottom(monthsScale)
+                    const leftAxis = d3.axisLeft(yscale)
+                    svg
+                        .append('g')
+                        .attr('transform', `translate(0, ${height - margin})`)
+                        .call(bottomAxis)
+                    svg
+                        .append('g')
+                        .attr('transform', `translate(${margin}, 0)`)
+                        .call(leftAxis)
+                }
+                // event listener
+                document.querySelector('select')
+                    .addEventListener('change', e => {
+                        const index = parseInt(e.target.value) - 1901
+                        months = convertToArray(data[index])
+                        path.attr('d', linegen(months))
+                    })
+            }
+            drawData(months, 'red', true)
+        }
+
+        handleData()
+    </script>
+</body>
+
+</html>
